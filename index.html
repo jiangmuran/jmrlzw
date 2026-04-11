@@ -9,7 +9,7 @@
     
     <meta name="description" content="jmrlzw 的专属主页。是一个重要的页面，表达了JMR 对 LZW 的喜爱与赞美之情。JMR loves LZW forever.">
     <meta name="keywords" content="jmrlzw, jmr, lzw, jmrlovelzw, jmrandlzw, 恋爱计时, 纪念日">
-    <link rel="canonical" href="https://jiangmuran.com/jmrlzw" />
+    <link rel="canonical" href="https://jiangmuran.com/jmrlzw/" />
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,10 +58,11 @@
         }
 
         .receipt-container {
-            width: 350px;
+            width: min(350px, calc(100vw - 24px));
             background: #fffdf0;
             position: relative;
             padding: 30px 25px 40px;
+            max-width: 100%;
             /* 逼真的阴影效果 */
             box-shadow: 
                 0 2px 4px rgba(0, 0, 0, 0.1),
@@ -267,6 +268,14 @@
             background: #fff;
             border: 1px solid #ddd;
             cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .barcode-container:hover,
+        .barcode-container:focus-visible {
+            border-color: #666;
+            box-shadow: 0 0 0 3px rgba(51, 51, 51, 0.08);
+            outline: none;
         }
 
         .barcode {
@@ -595,6 +604,19 @@
 
         /* 移动端隐藏装饰元素 */
         @media (max-width: 768px) {
+            body {
+                padding: 24px 12px;
+            }
+
+            .receipt-container {
+                transform: none;
+                padding: 24px 18px 32px;
+            }
+
+            .receipt-container:hover {
+                transform: none;
+            }
+
             .polaroid-photo {
                 display: none;
             }
@@ -712,7 +734,7 @@
                 <div class="thank-you">THANK YOU!</div>
                 
                 <!-- 条形码 -->
-                <div class="barcode-container" id="barcode-scan">
+                <div class="barcode-container" id="barcode-scan" role="button" tabindex="0" aria-label="Scan barcode to reveal hidden letter">
                     <div class="barcode">
                         <div class="bar"></div>
                         <div class="bar"></div>
@@ -769,10 +791,10 @@
         const musicToggle = document.getElementById('music-toggle');
         const musicLabel = document.getElementById('music-label');
 
-        function setMusicState(playing) {
+        function setMusicState(playing, statusText) {
             musicToggle.setAttribute('aria-pressed', String(playing));
             musicToggle.textContent = playing ? 'Pause' : 'Play';
-            musicLabel.textContent = playing ? 'Sunny Day - Playing' : 'Sunny Day - Paused';
+            musicLabel.textContent = statusText || (playing ? 'Sunny Day - Playing' : 'Sunny Day - Paused');
         }
 
         setMusicState(false);
@@ -783,13 +805,15 @@
                     await music.play();
                     setMusicState(true);
                 } catch (error) {
-                    setMusicState(false);
+                    setMusicState(false, 'Sunny Day - Tap Again to Play');
                 }
             } else {
                 music.pause();
                 setMusicState(false);
             }
         });
+
+        music.addEventListener('ended', () => setMusicState(false, 'Sunny Day - Finished'));
 
         const eggOverlay = document.getElementById('easter-egg');
         const eggText = document.getElementById('egg-text');
@@ -850,13 +874,21 @@
             }, speed);
         }
 
-        barcodeScan.addEventListener('click', () => {
+        function handleBarcodeScan() {
             scanCount += 1;
             if (scanTimer) clearTimeout(scanTimer);
             scanTimer = setTimeout(resetScan, 1500);
             if (scanCount >= 5) {
                 resetScan();
                 openEgg();
+            }
+        }
+
+        barcodeScan.addEventListener('click', handleBarcodeScan);
+        barcodeScan.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleBarcodeScan();
             }
         });
 
