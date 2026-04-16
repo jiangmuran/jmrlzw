@@ -312,6 +312,20 @@
             height: 22px;
             margin: 14px auto;
             display: block;
+            transform-origin: center;
+        }
+        body.is-playing .heart-icon {
+            animation: heart-pulse 1.8s ease-in-out infinite;
+        }
+        @keyframes heart-pulse {
+            0%, 100% { transform: scale(1); }
+            14%      { transform: scale(1.09); }
+            28%      { transform: scale(1); }
+            42%      { transform: scale(1.05); }
+            70%      { transform: scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            body.is-playing .heart-icon { animation: none; }
         }
 
         /* 收据项目 */
@@ -959,6 +973,7 @@
             isPlaying = playing;
             musicToggle.setAttribute('aria-pressed', String(playing));
             musicToggle.textContent = playing ? 'Pause' : 'Play';
+            document.body.classList.toggle('is-playing', playing);
         }
 
         function updateDots() {
@@ -970,6 +985,9 @@
         _fadeTokens.set(audioA, 0);
         _fadeTokens.set(audioB, 0);
 
+        // smoothstep (ease-in-out): slower at edges, natural acoustic perception
+        function ease(t) { return t * t * (3 - 2 * t); }
+
         function fade(audio, target, ms) {
             const my = (_fadeTokens.get(audio) || 0) + 1;
             _fadeTokens.set(audio, my);
@@ -980,7 +998,7 @@
                 function step(now) {
                     if (_fadeTokens.get(audio) !== my) { resolve(); return; }
                     const t = Math.min(1, Math.max(0, (now - start) / ms));
-                    try { audio.volume = clamp01(from + (target - from) * t); }
+                    try { audio.volume = clamp01(from + (target - from) * ease(t)); }
                     catch (_) { resolve(); return; }
                     if (t < 1) requestAnimationFrame(step);
                     else resolve();
