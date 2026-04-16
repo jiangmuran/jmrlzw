@@ -1138,7 +1138,30 @@
             });
         });
 
-        // Auto-advance at end
+        // Auto-advance with crossfade BEFORE track ends (real overlap)
+        const PRE_CROSSFADE_MS = FADE_OUT; // start next track this many ms before end
+
+        function maybePreCrossfade(audio) {
+            if (audio !== active) return;
+            if (!isPlaying || switching) return;
+            if (audio.paused) return;
+            const dur = audio.duration;
+            if (!isFinite(dur) || dur <= 0) return;
+            const remaining = (dur - audio.currentTime) * 1000;
+            if (remaining > 0 && remaining <= PRE_CROSSFADE_MS && !audio._preCued) {
+                audio._preCued = true;
+                const n = (currentIndex + 1) % tracks.length;
+                beginPlay(n);
+            }
+        }
+        audioA.addEventListener('timeupdate', () => maybePreCrossfade(audioA));
+        audioB.addEventListener('timeupdate', () => maybePreCrossfade(audioB));
+
+        // Reset the pre-cue flag when audio starts fresh (after seek/play)
+        audioA.addEventListener('play', () => { audioA._preCued = false; });
+        audioB.addEventListener('play', () => { audioB._preCued = false; });
+
+        // Safety fallback: if pre-crossfade missed (very short track, seek to end, etc.)
         const onEnded = (e) => { if (e.target === active) nextTrack(); };
         audioA.addEventListener('ended', onEnded);
         audioB.addEventListener('ended', onEnded);
